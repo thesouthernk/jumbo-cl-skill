@@ -7,6 +7,7 @@ Calls Jumbo's web API from inside a jumbo.cl tab of a Chrome started with
   jumbo_account.py start                  # open Chrome with the Jumbo profile (login once there)
   jumbo_account.py orders [--pages 3]     # past orders with items
   jumbo_account.py frequent [--pages 3]   # products ranked by how often you buy them
+  jumbo_account.py addresses              # saved addresses, the store serving each, and the one last used
   jumbo_account.py cart                   # current cart with prices and stock
   jumbo_account.py missing [--min 2]      # frequent products not in the cart
   jumbo_account.py set SKU=QTY ...        # set cart quantities (0 removes)
@@ -21,7 +22,8 @@ PROFILE = os.path.expanduser("~/.jumbo-cl/profile")
 CHROME = os.environ.get("JUMBO_CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 BFF = "https://be-reg-groceries-bff-jumbo.ecomm.cencosud.com"
 KEYS = {"orders": "be-reg-groceries-jumbo-order-ghti0t739jnfu",
-        "cart": "be-reg-groceries-jumbo-cart-rhk68rqi0adn"}
+        "cart": "be-reg-groceries-jumbo-cart-rhk68rqi0adn",
+        "location": "be-reg-groceries-jumbo-location-7mbqt42Gs"}
 JS = """async ([url, key, method, body]) => {
   const r = await fetch(url, {method, headers: {
     authorization: 'Bearer ' + localStorage.getItem('sessionDataToken'), apikey: key,
@@ -132,6 +134,20 @@ def frequent(orders):
     return sorted(rows, key=lambda r: (-r["times"], r["name"]))
 
 
+def slim_addresses(d, orders):
+    last = ((orders[0].get("shipping") or {}).get("address") or {}).get("id") if orders else None
+    rows = []
+    for a in ([d["nearest"]] if d.get("nearest") else []) + (d.get("others") or []):
+        cov = a.get("coverage") or {}
+        rows.append({"id": a["id"], "alias": a.get("alias"),
+                     "address": ", ".join(x for x in (f"{a.get('street', '')} {a.get('number', '')}".strip(),
+                                                      (a.get("residence") or {}).get("unit"), a.get("neighborhood"), a.get("city")) if x),
+                     "store": (cov.get("storeDetails") or {}).get("store"),
+                     "store_name": (cov.get("storeDetails") or {}).get("name"),
+                     "delivers": cov.get("status"), "last_used": a["id"] == last})
+    return sorted(rows, key=lambda r: not r["last_used"])
+
+
 def slim_cart(c):
     return {"items": [{"sku": i["skuId"], "name": i.get("name"), "qty": i["quantity"],
                        "price": (i.get("prices") or {}).get("price"),
@@ -142,7 +158,7 @@ def slim_cart(c):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["start", "orders", "frequent", "cart", "missing", "set", "repeat", "open"])
+    ap.add_argument("cmd", choices=["start", "orders", "frequent", "addresses", "cart", "missing", "set", "repeat", "open"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--pages", type=int, default=3, help="10 orders per page")
     ap.add_argument("--min", type=int, default=2, help="missing: bought in at least N orders")
@@ -166,6 +182,8 @@ def main():
 
         if a.cmd == "orders":
             out = [slim_order(o) for o in orders]
+        elif a.cmd == "addresses":
+            out = slim_addresses(j.call("/location/address", "location"), orders)
         elif a.cmd == "frequent":
             out = frequent(orders)
         elif a.cmd == "cart":

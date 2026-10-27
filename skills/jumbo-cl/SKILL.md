@@ -48,6 +48,7 @@ Plan B: la página de búsqueda también trae un `<script type="application/ld+j
 A="python3 -I <skill-dir>/scripts/jumbo_account.py"
 $A orders [--pages 3]     # pedidos (10 por página) con sus productos, sku y precio pagado
 $A frequent [--pages 3]   # productos ordenados por cuántas veces los compra (+ cantidad promedio)
+$A addresses              # direcciones guardadas, tienda que despacha a cada una y cuál usó la última vez
 $A cart                   # carro actual: sku, cantidad, precio, stock, totales
 $A missing [--min 2]      # productos que compra seguido y NO están en el carro
 $A set 500=2 5870=1       # fija cantidades (no suma); 0 quita
@@ -60,8 +61,19 @@ desde una pestaña de jumbo.cl, con la sesión del usuario. El script abre Chrom
 Si falla con "Sesión expirada" o los pedidos salen vacíos, corre `$A open /mis-compras` y pídele al usuario
 que inicie sesión en esa ventana (Google funciona ahí porque no es un navegador automatizado). Tú no escribas credenciales.
 
-El carro se arma en la tienda de su último pedido (`store`, ej. `jumboclj512`); usa `--store` para otra.
 `set` fija la cantidad final, así que para sumar lee el carro primero.
+
+### Confirma la dirección antes de armar el carro
+
+Al empezar a armar un pedido (antes del primer `set` o `repeat`), corre `addresses` y pregunta en una línea:
+"¿Lo mando a **<alias o dirección con `last_used: true`>**, como la última vez?". Si tiene otras guardadas, menciónalas
+como alternativa. Hazlo una vez por pedido, no en cada cambio del carro.
+
+Esto importa porque la dirección decide la tienda (`store`), y los precios y el stock son por tienda: si arma el carro
+para una dirección y despacha a otra, puede cambiar lo que hay y lo que cuesta. Usa siempre `--store <store de la
+dirección elegida>` en `cart`, `set` y `missing` (por defecto se usa la tienda de su último pedido). Si la dirección
+elegida tiene `delivers: false`, avísale que Jumbo no despacha ahí. Si quiere una dirección nueva, la agrega él
+en el checkout de jumbo.cl.
 
 ### Flujos típicos
 
@@ -80,7 +92,8 @@ El carro se arma en la tienda de su último pedido (`store`, ej. `jumboclj512`);
 
 ### Pagar
 
-Deja todo listo y abre el checkout: `$A open /checkout`. Lo normal es que el usuario revise y pague él.
+Deja todo listo y abre el checkout: `$A open /checkout`. Recuérdale que revise que la dirección del checkout
+sea la que confirmó. Lo normal es que el usuario revise y pague él.
 Si te pide que pagues tú: resume primero los productos, la dirección, la ventana de despacho, el medio de pago y el
 **total exacto**, y espera un "sí" explícito a ese resumen en ese momento. Una aprobación anterior o general no cuenta,
 porque el pago es plata real y no se deshace. Nunca escribas datos de tarjeta ni claves.
