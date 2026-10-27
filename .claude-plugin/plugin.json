@@ -1,0 +1,8 @@
+{
+  "name": "jumbo-cl",
+  "version": "0.1.0",
+  "description": "Compra en jumbo.cl desde Claude: busca y compara precios, revisa tus compras anteriores, arma o repite el carro y te dice qué falta.",
+  "author": { "name": "thesouthernk" },
+  "license": "MIT",
+  "keywords": ["jumbo", "supermercado", "chile", "compras", "skill"]
+}

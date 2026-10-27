@@ -1,0 +1,14 @@
+{
+  "name": "jumbo-cl",
+  "description": "Skill no oficial para comprar en jumbo.cl (Chile) desde Claude.",
+  "owner": {
+    "name": "thesouthernk"
+  },
+  "plugins": [
+    {
+      "name": "jumbo-cl",
+      "source": "./",
+      "description": "Compra en jumbo.cl desde Claude: precios, compras anteriores, carro."
+    }
+  ]
+}
